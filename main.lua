@@ -4,7 +4,7 @@
 local Main = {}
 
 -- GitHub base URL (UPDATE THIS WITH YOUR GITHUB RAW URL)
-local GITHUB_BASE_URL = "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/Og%20Files"
+local GITHUB_BASE_URL = "https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main"
 
 -- Module URLs
 local MODULES = {

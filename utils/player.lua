@@ -3,7 +3,7 @@
 
 local PlayerUtils = {}
 
-local Constants = loadstring(game:HttpGet("YOUR_GITHUB_RAW_URL/utils/constants.lua"))()
+local Constants = loadstring(game:HttpGet("https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/utils/constants.lua"))()
 
 --------------------------------------------------------------------
 -- OWNER/ROLE CHECKS

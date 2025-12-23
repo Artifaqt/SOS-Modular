@@ -5,7 +5,7 @@
 -- CONFIGURATION
 -- ============================================
 -- UPDATE THIS WITH YOUR GITHUB RAW URL
-local GITHUB_RAW_URL = "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/Og%20Files/main.lua"
+local GITHUB_RAW_URL = "https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/main.lua"
 
 -- ============================================
 -- VERSION INFO

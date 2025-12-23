@@ -4,8 +4,8 @@
 local Leaderboard = {}
 
 -- Load utilities
-local UIUtils = loadstring(game:HttpGet("YOUR_GITHUB_RAW_URL/utils/ui.lua"))()
-local Constants = loadstring(game:HttpGet("YOUR_GITHUB_RAW_URL/utils/constants.lua"))()
+local UIUtils = loadstring(game:HttpGet("https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/utils/ui.lua"))()
+local Constants = loadstring(game:HttpGet("https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/utils/constants.lua"))()
 
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")

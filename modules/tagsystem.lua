@@ -4,10 +4,10 @@
 local TagSystem = {}
 
 -- Load utilities
-local UIUtils = loadstring(game:HttpGet("YOUR_GITHUB_RAW_URL/utils/ui.lua"))()
-local Constants = loadstring(game:HttpGet("YOUR_GITHUB_RAW_URL/utils/constants.lua"))()
-local ChatUtils = loadstring(game:HttpGet("YOUR_GITHUB_RAW_URL/utils/chat.lua"))()
-local PlayerUtils = loadstring(game:HttpGet("YOUR_GITHUB_RAW_URL/utils/player.lua"))()
+local UIUtils = loadstring(game:HttpGet("https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/utils/ui.lua"))()
+local Constants = loadstring(game:HttpGet("https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/utils/constants.lua"))()
+local ChatUtils = loadstring(game:HttpGet("https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/utils/chat.lua"))()
+local PlayerUtils = loadstring(game:HttpGet("https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/utils/player.lua"))()
 
 local Players = game:GetService("Players")
 local TextChatService = game:FindService("TextChatService")
