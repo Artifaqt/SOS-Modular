@@ -1,24 +1,82 @@
 # SOS Modular Script System
 
-A modular, GitHub-hosted Roblox executor script with clean architecture and easy maintenance.
+A modular, GitHub-hosted Roblox executor script with clean dependency injection architecture, automatic cleanup on re-execution, and easy maintenance.
+
+## ✨ Features
+
+- ✅ **Centralized Loading** - All external links in one place ([main.lua](main.lua))
+- ✅ **Dependency Injection** - Modules don't self-load, cleaner architecture
+- ✅ **Re-execution Cleanup** - Run the script multiple times without conflicts or performance degradation
+- ✅ **Modular Design** - Easy to maintain and extend
+- ✅ **GitHub Hosted** - Update once, users auto-reload
+- ✅ **Full Featured** - HUD, Flight, Custom Leaderboard, Tag System
+
+---
 
 ## 📁 Project Structure
 
 ```
 SOS-Modular/
-├── loader_executor.lua     # Entry point - run this in your executor
-├── main.lua               # Orchestrator - loads all modules
-├── modules/               # Feature modules
-│   ├── hud.lua           # Main HUD system (flight, animations, camera)
-│   ├── leaderboard.lua   # Custom player leaderboard
-│   └── tagsystem.lua     # SOS tags activation system
-└── utils/                # Shared utilities
-    ├── constants.lua     # Shared constants, themes, configs
-    ├── ui.lua            # UI helper functions
-    ├── settings.lua      # Settings save/load system
-    ├── chat.lua          # Chat utilities
-    └── player.lua        # Player utilities
+├── .gitignore                   # Git ignore rules
+├── README.md                    # This file
+├── loader_executor.lua          # Entry point - run this in your executor
+├── main.lua                     # Central orchestrator - loads & wires all modules
+│
+├── modules/                     # Feature modules (no internal links)
+│   ├── hud.lua                 # Main HUD system orchestrator
+│   ├── hud/                    # HUD sub-modules
+│   │   ├── data.lua           # Data structures
+│   │   ├── ui_builder.lua     # UI components
+│   │   ├── lighting.lua       # Lighting effects
+│   │   ├── animations.lua     # Animation system
+│   │   ├── flight.lua         # Flight physics
+│   │   ├── camera.lua         # Camera controls
+│   │   ├── player.lua         # Player modifications
+│   │   └── ui_pages.lua       # Menu pages
+│   ├── leaderboard.lua         # Custom player leaderboard
+│   └── tagsystem.lua           # SOS tags activation system
+│
+└── utils/                       # Shared utilities (no internal links)
+    ├── constants.lua            # Shared constants, themes, configs
+    ├── ui.lua                   # UI helper functions
+    ├── settings.lua             # Settings save/load system
+    ├── chat.lua                 # Chat utilities
+    └── player.lua               # Player utilities
 ```
+
+---
+
+## 🏗️ Architecture
+
+### Dependency Injection Pattern
+
+**All external links live in [main.lua](main.lua) only.**
+
+Modules expose `init(deps)` functions and receive their dependencies:
+
+```lua
+-- ❌ OLD WAY (self-loading, creates conflicts on re-execution)
+local Constants = loadstring(game:HttpGet("https://..."))()
+
+-- ✅ NEW WAY (dependency injection)
+function Module.init(deps)
+    Constants = deps.Constants  -- Injected by main.lua
+end
+```
+
+### Re-execution Cleanup
+
+When the script is re-executed, it automatically:
+1. Finds previous runtime in `_G.__SOS_RUNTIME`
+2. Calls `cleanup()` on all modules
+3. Disconnects all connections
+4. Destroys all GUIs
+5. Stops all background loops
+6. Clears registry and starts fresh
+
+**Result**: You can re-run the script as many times as you want without relaunching Roblox. Perfect for development and updates!
+
+---
 
 ## 🚀 Setup Instructions
 
@@ -31,45 +89,44 @@ SOS-Modular/
 
 ### Step 2: Update URLs
 
-You need to update the GitHub URLs in several files:
+**You only need to update ONE file: [main.lua](main.lua)**
 
-#### 1. **loader_executor.lua**
-Replace `YOUR_USERNAME/YOUR_REPO` with your actual GitHub info:
+Open `main.lua` and replace the base URL (line 47):
+
 ```lua
-local GITHUB_RAW_URL = "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/SOS-Modular/main.lua"
+-- BEFORE
+local GITHUB_BASE_URL = "https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main"
+
+-- AFTER
+local GITHUB_BASE_URL = "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/refs/heads/main"
 ```
 
-#### 2. **main.lua**
-Replace the base URL:
+**That's it!** All modules are loaded from this one URL.
+
+### Step 3: Update Loader (Optional)
+
+If you want to use a different loader URL, update `loader_executor.lua` (line ~5):
+
 ```lua
-local GITHUB_BASE_URL = "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/SOS-Modular"
+local GITHUB_RAW_URL = "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/refs/heads/main/main.lua"
 ```
 
-#### 3. **All utility files** (utils/*.lua)
-Replace `YOUR_GITHUB_RAW_URL` in:
-- utils/ui.lua
-- utils/player.lua
-
-#### 4. **All module files** (modules/*.lua)
-Replace `YOUR_GITHUB_RAW_URL` in:
-- modules/leaderboard.lua
-- modules/tagsystem.lua
-- modules/hud.lua
-
-### Step 3: Test the URL
+### Step 4: Test the URL
 
 Before running in executor, test your URL in a browser:
 ```
-https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/SOS-Modular/main.lua
+https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/refs/heads/main/main.lua
 ```
 
 If you see the Lua code, your URL is correct! ✅
 
-### Step 4: Run in Executor
+### Step 5: Run in Executor
 
 1. Copy the entire contents of `loader_executor.lua`
 2. Paste it into your Roblox executor
 3. Execute!
+
+---
 
 ## 🎮 Usage
 
@@ -79,23 +136,38 @@ If you see the Lua code, your URL is correct! ✅
 - **Tab** - Toggle Leaderboard
 - **CapsLock** - Switch between custom/default leaderboard
 
+### HUD Features
+- Flight system with mobile support
+- Custom animations (float, fly, custom IDs)
+- Camera controls (FOV, shift lock)
+- Speed controls
+- Lighting effects
+- FPS counter
+
 ### Tag System
 - Broadcast SOS: Bottom-left panel (owners/special users only)
 - Activation marker: 𖺗
 - Reply marker: ¬
+- Auto-tags for SOS users, owners, testers, sins, OGs, custom roles
+- Click tags to teleport behind player
 
 ### Leaderboard Features
 - Click player entry to see options
 - Teleport to player
-- Send friend request
+- Send friend request (requires CoreModule)
 - View avatar
-- Mute voice chat
+- Mute/unmute voice chat
+- Friend icons
+- Draggable, resizable
+- Special styling for owners
+
+---
 
 ## 🔧 Customization
 
 ### Adding Custom Roles
 
-Edit `utils/constants.lua`:
+Edit [utils/constants.lua](utils/constants.lua):
 
 ```lua
 -- Add owner
@@ -112,11 +184,16 @@ Constants.CustomTags = {
 Constants.SinProfiles = {
     [USER_ID] = { SinName = "Custom", Color = Color3.fromRGB(255, 0, 0) },
 }
+
+-- Add OG profiles
+Constants.OgProfiles = {
+    [USER_ID] = { OgName = "OG Player", Color = Color3.fromRGB(100, 200, 255) },
+}
 ```
 
 ### Modifying Theme
 
-Edit `utils/constants.lua` to change colors:
+Edit [utils/constants.lua](utils/constants.lua) to change colors:
 
 ```lua
 Constants.THEME = {
@@ -127,47 +204,121 @@ Constants.THEME = {
 }
 ```
 
-## 📝 Development Notes
+### Adding Flight Animation IDs
 
-### HUD Module (modules/hud.lua)
+Edit [utils/constants.lua](utils/constants.lua):
 
-The current `hud.lua` is a **template**. You need to:
-1. Take your existing `.lua` file (main HUD script)
-2. Refactor it into the `hud.lua` module structure
-3. Use the utilities we've created (UIUtils, Constants, etc.)
-4. Follow the same pattern as the leaderboard and tagsystem modules
-
-### Adding New Modules
-
-1. Create a new file in `modules/` folder
-2. Load utilities at the top:
 ```lua
-local UIUtils = loadstring(game:HttpGet("YOUR_GITHUB_RAW_URL/utils/ui.lua"))()
-local Constants = loadstring(game:HttpGet("YOUR_GITHUB_RAW_URL/utils/constants.lua"))()
+Constants.DEFAULT_FLOAT_ID = "rbxassetid://YOUR_ANIMATION_ID"
+Constants.DEFAULT_FLY_ID = "rbxassetid://YOUR_ANIMATION_ID"
 ```
-3. Create a table for your module:
+
+---
+
+## 🔄 Updating the Script
+
+### For Developers (You)
+
+1. Edit files in your GitHub repository
+2. Commit and push changes
+3. Changes are live immediately!
+
+### For Users
+
+**Option 1: Re-execute** (Recommended)
+- Just run the script again in your executor
+- Cleanup system handles everything automatically
+- No need to rejoin game!
+
+**Option 2: Rejoin Game**
+- Works too, but re-execution is faster
+
+---
+
+## 🛠️ Adding New Modules
+
+### 1. Create Module File
+
+Create `modules/your_module.lua`:
+
 ```lua
-local MyModule = {}
-```
-4. Add an init function:
-```lua
-function MyModule.init()
+local YourModule = {}
+
+-- Connection tracking for cleanup
+YourModule.__connections = {}
+
+-- Dependencies (injected by main.lua)
+local Constants, UIUtils
+
+-- Init function
+function YourModule.init(deps)
+    deps = deps or {}
+    Constants = deps.Constants
+    UIUtils = deps.UIUtils
+
     -- Your initialization code
+    local conn = game:GetService("Players").PlayerAdded:Connect(function(player)
+        -- ...
+    end)
+    table.insert(YourModule.__connections, conn)
+end
+
+-- Cleanup function
+function YourModule.cleanup()
+    for _, c in ipairs(YourModule.__connections) do
+        pcall(function() c:Disconnect() end)
+    end
+    YourModule.__connections = {}
+
+    -- Destroy your GUIs, etc.
+end
+
+return YourModule
+```
+
+### 2. Add to main.lua
+
+Add your module URL to `MODULES` table:
+```lua
+local MODULES = {
+    -- ... existing modules ...
+    your_module = GITHUB_BASE_URL .. "/modules/your_module.lua",
+}
+```
+
+Load and initialize:
+```lua
+local YourModule = Main.loadModule("your_module", MODULES.your_module)
+RUNTIME.modules["your_module"] = YourModule
+
+if YourModule and YourModule.init then
+    YourModule.init({
+        Constants = Constants,
+        UIUtils = UIUtils,
+        -- ... other dependencies
+    })
 end
 ```
-5. Return the module:
+
+### 3. Connection Tracking Rules
+
+**Always track connections:**
 ```lua
-return MyModule
+local conn = something:Connect(function() ... end)
+table.insert(ModuleName.__connections, conn)
 ```
-6. Add it to `main.lua` in the MODULES table
 
-### Benefits of This Structure
+**For spawn() loops:**
+```lua
+spawn(function()
+    while condition and not ModuleName.__cleanupRequested do
+        -- work
+        if ModuleName.__cleanupRequested then break end
+    end
+end)
+```
 
-✅ **Easy Updates** - Change one file, push to GitHub, users reload
-✅ **Modular** - Each feature is separate and maintainable
-✅ **Reusable** - Utilities can be shared across modules
-✅ **Organized** - Clear separation of concerns
-✅ **Scalable** - Easy to add new features
+---
 
 ## 🐛 Troubleshooting
 
@@ -175,40 +326,116 @@ return MyModule
 - Check your GitHub URL is correct
 - Ensure repository is PUBLIC
 - Verify the file path matches your repo structure
+- Try accessing URL directly in browser
 
 ### "Module failed to load"
-- Check all URLs are updated with your GitHub info
+- Check console output for specific module name
 - Verify all files are uploaded to GitHub
 - Check for typos in file names (case-sensitive!)
+- Make sure main.lua GITHUB_BASE_URL is correct
 
-### "YOUR_GITHUB_RAW_URL" appearing in errors
-- You forgot to update the URLs in utility/module files
-- Replace ALL instances of `YOUR_GITHUB_RAW_URL` with your actual URL
+### Performance Degradation After Multiple Runs
+- **This should not happen anymore!** Re-execution cleanup prevents this.
+- If you still experience issues, check console for cleanup errors
 
-## 📦 Original Files
+### Script Conflicts When Re-executing
+- **This should not happen anymore!** Cleanup disconnects all old connections.
+- If you experience duplicate inputs or tags, report as a bug
 
-Your original files are preserved:
-- `.lua` - Original main HUD script
-- `BR05.lua` - Original leaderboard script
-- `BR05TagSystem.lua` - Original tag system script
+---
 
-You can reference these when refactoring `modules/hud.lua`.
+## 📚 Architecture Benefits
 
-## 🔄 Updating the Script
+✅ **Single Source of Truth** - All URLs in main.lua
+✅ **No Circular Dependencies** - Clean dependency flow
+✅ **Easy Testing** - Modules can be tested in isolation
+✅ **Re-execution Safe** - Cleanup prevents conflicts
+✅ **Performance Stable** - No connection/loop leaks
+✅ **Maintainable** - Clear module boundaries
+✅ **Scalable** - Easy to add features
 
-1. Edit files in your GitHub repository
-2. Commit changes
-3. Users just need to re-run `loader_executor.lua` in their executor
-4. No need to distribute new files!
+---
+
+## 📊 File Checklist
+
+Before uploading to GitHub, make sure these files exist:
+
+**Required Files:**
+- ✅ `loader_executor.lua` - Script entry point
+- ✅ `main.lua` - Central orchestrator
+- ✅ `README.md` - Documentation
+
+**Utils Folder:**
+- ✅ `utils/constants.lua`
+- ✅ `utils/ui.lua`
+- ✅ `utils/settings.lua`
+- ✅ `utils/chat.lua`
+- ✅ `utils/player.lua`
+
+**Modules Folder:**
+- ✅ `modules/hud.lua`
+- ✅ `modules/leaderboard.lua`
+- ✅ `modules/tagsystem.lua`
+
+**HUD Sub-modules:**
+- ✅ `modules/hud/data.lua`
+- ✅ `modules/hud/ui_builder.lua`
+- ✅ `modules/hud/lighting.lua`
+- ✅ `modules/hud/animations.lua`
+- ✅ `modules/hud/flight.lua`
+- ✅ `modules/hud/camera.lua`
+- ✅ `modules/hud/player.lua`
+- ✅ `modules/hud/ui_pages.lua`
+
+**Optional (can ignore):**
+- `.gitignore` - Keeps local files private
+- `SOS-non-Modular/` - Original reference files (ignored by git)
+
+---
+
+## 📊 System Requirements
+
+- **Executor**: Any modern Roblox executor with HttpGet support
+- **Optional**: CoreModule for friend requests (leaderboard feature)
+- **Internet**: Required for loading from GitHub
+
+---
+
+## 🔐 Security Notes
+
+- All scripts are visible in this public repository
+- No obfuscation, fully readable code
+- Review code before executing (as you should with any script)
+- GitHub URLs use HTTPS
+
+---
+
+## 🎯 Current Version
+
+**v5.5** - Re-execution cleanup fully implemented
+
+### Recent Changes
+- ✅ Centralized all external links in main.lua
+- ✅ Implemented dependency injection architecture
+- ✅ Added re-execution cleanup system
+- ✅ Fixed GUI location bugs
+- ✅ Added connection tracking to all modules
+- ✅ Added spawn() loop cleanup flags
+- ✅ Performance stable across multiple re-executions
+
+---
 
 ## 📞 Support
 
 If you encounter issues:
-1. Check all URLs are updated correctly
-2. Verify files are uploaded to GitHub
-3. Test URLs in browser before using in executor
+1. Check all URLs are updated correctly in main.lua
+2. Verify files are uploaded to GitHub and public
+3. Test main.lua URL in browser before using in executor
 4. Check executor console for error messages
+5. Review technical documentation in this repo
 
 ---
 
 **Made with ❤️ for the SOS community**
+
+*Powered by dependency injection and clean architecture*
