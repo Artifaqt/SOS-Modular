@@ -33,7 +33,7 @@ local broadcastPanel
 local broadcastSOS
 local broadcastAK
 
-local INIT_DELAY = 0.9
+-- Initialization is handled by main.lua (dependencies are injected there).
 
 --------------------------------------------------------------------
 -- UI HELPERS
@@ -420,10 +420,5 @@ function TagSystem.init(deps)
 
 	print("SOS Tags loaded. Activation 𖺗. Reply ¬ once per person per join.")
 end
-
--- Delayed initialization
-task.delay(INIT_DELAY, function()
-	TagSystem.init()
-end)
 
 return TagSystem

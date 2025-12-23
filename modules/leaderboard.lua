@@ -16,7 +16,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
-local THEME = Constants.THEME
+local THEME
 
 -- State
 local screenGui
@@ -27,19 +27,15 @@ local playerEntries = {}
 local mutedPlayers = {}
 local currentlyExpandedPanel = nil
 local currentExpandedCloseCallback = nil
-local CoreModule
+-- CoreModule is injected by main.lua via Leaderboard.init({CoreModule=...})
 
 local isLeaderboardVisible = true
 local usingCustom = true
 local isSwitching = false
 local originalPosition
 
--- Teleport sound
-local teleportSound = Instance.new("Sound")
-teleportSound.Name = "TeleportSound"
-teleportSound.SoundId = Constants.TELEPORT_SOUND_ID
-teleportSound.Volume = 100
-teleportSound.Parent = SoundService
+-- Teleport sound (created after Constants is injected)
+local teleportSound
 
 --------------------------------------------------------------------
 -- INITIALIZATION
@@ -54,6 +50,19 @@ function Leaderboard.init(deps)
 		warn("[SOS Leaderboard] Missing dependencies. Expected {UIUtils=..., Constants=...}.")
 		return
 	end
+	THEME = Constants.THEME
+
+	-- Create / refresh teleport sound now that Constants is available
+	pcall(function()
+		if teleportSound and teleportSound.Parent then
+			teleportSound:Destroy()
+		end
+	end)
+	teleportSound = Instance.new("Sound")
+	teleportSound.Name = "TeleportSound"
+	teleportSound.SoundId = Constants.TELEPORT_SOUND_ID
+	teleportSound.Volume = 100
+	teleportSound.Parent = SoundService
 	-- CoreModule injected by main.lua (optional)
 	-- Clean up any previous instances
 	pcall(function()
