@@ -5,55 +5,10 @@
 local HUD = {}
 
 --------------------------------------------------------------------
--- LOAD SUB-MODULES
+-- MODULE REFERENCES (injected by main.lua)
 --------------------------------------------------------------------
-local BASE_URL = "https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/modules/hud/"
-
-local function safeLoadModule(name, url)
-	print("[SOS HUD] Loading module:", name)
-	local success, result = pcall(function()
-		local code = game:HttpGet(url)
-		return loadstring(code)()
-	end)
-
-	if success then
-		print("[SOS HUD] ✓ Loaded:", name)
-		return result
-	else
-		warn("[SOS HUD] ✗ Failed to load:", name, "-", result)
-		return nil
-	end
-end
-
-print("[SOS HUD] Loading sub-modules...")
-local Data = safeLoadModule("data", BASE_URL .. "data.lua")
-local UIBuilder = safeLoadModule("ui_builder", BASE_URL .. "ui_builder.lua")
-local LightingModule = safeLoadModule("lighting", BASE_URL .. "lighting.lua")
-local AnimationsModule = safeLoadModule("animations", BASE_URL .. "animations.lua")
-local FlightModule = safeLoadModule("flight", BASE_URL .. "flight.lua")
-local CameraModule = safeLoadModule("camera", BASE_URL .. "camera.lua")
-local PlayerModule = safeLoadModule("player", BASE_URL .. "player.lua")
-local UIPagesModule = safeLoadModule("ui_pages", BASE_URL .. "ui_pages.lua")
-
--- Check if any critical modules failed to load
-if not Data or not UIBuilder or not AnimationsModule or not FlightModule then
-	error("[SOS HUD] Critical sub-modules failed to load! Cannot continue.")
-end
-
-print("[SOS HUD] All sub-modules loaded successfully!")
-
--- Load utilities
-print("[SOS HUD] Loading utilities...")
-local UIUtils = safeLoadModule("ui_utils", "https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/utils/ui.lua")
-local Constants = safeLoadModule("constants", "https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/utils/constants.lua")
-local Settings = safeLoadModule("settings", "https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/utils/settings.lua")
-
-if not Constants then
-	error("[SOS HUD] Constants module failed to load! Cannot continue.")
-end
-
-print("[SOS HUD] DEFAULT_FLOAT_ID:", Constants.DEFAULT_FLOAT_ID)
-print("[SOS HUD] DEFAULT_FLY_ID:", Constants.DEFAULT_FLY_ID)
+local Data, UIBuilder, LightingModule, AnimationsModule, FlightModule, CameraModule, PlayerModule, UIPagesModule
+local Constants, Settings
 
 --------------------------------------------------------------------
 -- SERVICES
@@ -249,7 +204,24 @@ end
 --------------------------------------------------------------------
 -- INITIALIZATION
 --------------------------------------------------------------------
-function HUD.init()
+function HUD.init(modules)
+modules = modules or {}
+-- Support both old keys and current keys
+Data = modules.Data or Data
+UIBuilder = modules.UIBuilder or UIBuilder
+LightingModule = modules.LightingModule or modules.Lighting or LightingModule
+AnimationsModule = modules.AnimationsModule or modules.Animations or AnimationsModule
+FlightModule = modules.FlightModule or modules.Flight or FlightModule
+CameraModule = modules.CameraModule or modules.Camera or CameraModule
+PlayerModule = modules.PlayerModule or modules.Player or PlayerModule
+UIPagesModule = modules.UIPagesModule or modules.UIPages or UIPagesModule
+Constants = modules.Constants or Constants
+Settings = modules.Settings or Settings
+
+if not (Data and UIBuilder and LightingModule and AnimationsModule and FlightModule and CameraModule and PlayerModule and UIPagesModule and Constants and Settings) then
+	warn("[SOS HUD] Missing injected modules. Ensure main.lua loads and passes HUD sub-modules into HUD.init().")
+end
+
 	Settings.loadSettings()
 
 	-- Initialize all modules in dependency order

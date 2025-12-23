@@ -15,10 +15,20 @@ local MODULES = {
 	chat = GITHUB_BASE_URL .. "/utils/chat.lua",
 	player = GITHUB_BASE_URL .. "/utils/player.lua",
 
-	-- Modules
+	-- Main Modules
 	hud = GITHUB_BASE_URL .. "/modules/hud.lua",
 	leaderboard = GITHUB_BASE_URL .. "/modules/leaderboard.lua",
 	tagsystem = GITHUB_BASE_URL .. "/modules/tagsystem.lua",
+
+	-- HUD Sub-Modules
+	hud_data = GITHUB_BASE_URL .. "/modules/hud/data.lua",
+	hud_ui_builder = GITHUB_BASE_URL .. "/modules/hud/ui_builder.lua",
+	hud_lighting = GITHUB_BASE_URL .. "/modules/hud/lighting.lua",
+	hud_animations = GITHUB_BASE_URL .. "/modules/hud/animations.lua",
+	hud_flight = GITHUB_BASE_URL .. "/modules/hud/flight.lua",
+	hud_camera = GITHUB_BASE_URL .. "/modules/hud/camera.lua",
+	hud_player = GITHUB_BASE_URL .. "/modules/hud/player.lua",
+	hud_ui_pages = GITHUB_BASE_URL .. "/modules/hud/ui_pages.lua",
 }
 
 --------------------------------------------------------------------
@@ -61,8 +71,19 @@ function Main.init()
 		return
 	end
 
-	-- Load modules
-	print("\n[SOS] Loading modules...")
+	-- Load HUD sub-modules
+	print("\n[SOS] Loading HUD sub-modules...")
+	local HUD_Data = Main.loadModule("hud_data", MODULES.hud_data)
+	local HUD_UIBuilder = Main.loadModule("hud_ui_builder", MODULES.hud_ui_builder)
+	local HUD_Lighting = Main.loadModule("hud_lighting", MODULES.hud_lighting)
+	local HUD_Animations = Main.loadModule("hud_animations", MODULES.hud_animations)
+	local HUD_Flight = Main.loadModule("hud_flight", MODULES.hud_flight)
+	local HUD_Camera = Main.loadModule("hud_camera", MODULES.hud_camera)
+	local HUD_Player = Main.loadModule("hud_player", MODULES.hud_player)
+	local HUD_UIPages = Main.loadModule("hud_ui_pages", MODULES.hud_ui_pages)
+
+	-- Load main modules
+	print("\n[SOS] Loading main modules...")
 	local HUD = Main.loadModule("hud", MODULES.hud)
 	local Leaderboard = Main.loadModule("leaderboard", MODULES.leaderboard)
 	local TagSystem = Main.loadModule("tagsystem", MODULES.tagsystem)
@@ -72,7 +93,19 @@ function Main.init()
 
 	if HUD and HUD.init then
 		local success, err = pcall(function()
-			HUD.init()
+			-- Pass sub-modules to HUD
+			HUD.init({
+				Data = HUD_Data,
+				UIBuilder = HUD_UIBuilder,
+				LightingModule = HUD_Lighting,
+				AnimationsModule = HUD_Animations,
+				FlightModule = HUD_Flight,
+				CameraModule = HUD_Camera,
+				PlayerModule = HUD_Player,
+				UIPagesModule = HUD_UIPages,
+				Constants = Constants,
+				Settings = SettingsUtils,
+			})
 		end)
 		if not success then
 			warn("[SOS] HUD.init() failed:", err)
