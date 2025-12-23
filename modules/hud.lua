@@ -252,6 +252,16 @@ end
 	AnimationsModule.init(Settings, Constants, Data, notify, Constants.DEFAULT_FLOAT_ID, Constants.DEFAULT_FLY_ID)
 	FlightModule.init(AnimationsModule, IS_MOBILE)
 
+	-- Re-evaluate input capabilities shortly after init (executor environments may report flags late)
+	task.delay(0.75, function()
+		local mobileNow = UserInputService.TouchEnabled and not (UserInputService.KeyboardEnabled or UserInputService.MouseEnabled)
+		if mobileNow ~= IS_MOBILE then
+			IS_MOBILE = mobileNow
+			pcall(function() FlightModule.setIsMobile(IS_MOBILE) end)
+		end
+	end)
+
+
 	-- 4. Get character (this will call loadFlightTracks, so AnimationsModule must be initialized first!)
 	getCharacter()
 
