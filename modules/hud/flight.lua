@@ -6,6 +6,43 @@ local FlightModule = {}
 -- Services
 local UserInputService = game:GetService("UserInputService")
 
+-- Key tracking (more reliable than IsKeyDown in some environments)
+local keyDown = {}
+local inputConnectionsBound = false
+
+local function setKey(input, isDown)
+	if input and input.KeyCode then
+		keyDown[input.KeyCode] = isDown and true or nil
+	end
+end
+
+local function isDown(keyCode)
+	return keyDown[keyCode] == true
+end
+
+local function bindInputConnections()
+	if inputConnectionsBound then return end
+	inputConnectionsBound = true
+
+	UserInputService.InputBegan:Connect(function(input, gameProcessed)
+		if gameProcessed then return end
+		setKey(input, true)
+	end)
+
+	UserInputService.InputEnded:Connect(function(input, gameProcessed)
+		if gameProcessed then return end
+		setKey(input, false)
+	end)
+
+	-- Safety: clear stuck keys when window focus is lost
+	if UserInputService.WindowFocusReleased then
+		UserInputService.WindowFocusReleased:Connect(function()
+			keyDown = {}
+		end)
+	end
+end
+
+
 -- Will be injected
 local AnimationsModule
 
@@ -32,6 +69,9 @@ local IS_MOBILE
 function FlightModule.init(animModule, isMobile)
 	AnimationsModule = animModule
 	IS_MOBILE = isMobile
+	if not IS_MOBILE then
+		bindInputConnections()
+	end
 end
 
 function FlightModule.updateCharacter(char, hum, root, cam, shoulder, shoulderC0)
@@ -112,12 +152,22 @@ function FlightModule.updateMovementInput()
 	local forward, backward, left, right, up, down = 0, 0, 0, 0, 0, 0
 
 	if not IS_MOBILE then
-		if UserInputService:IsKeyDown(Enum.KeyCode.W) then forward = 1 end
-		if UserInputService:IsKeyDown(Enum.KeyCode.S) then backward = 1 end
-		if UserInputService:IsKeyDown(Enum.KeyCode.A) then left = 1 end
-		if UserInputService:IsKeyDown(Enum.KeyCode.D) then right = 1 end
-		if UserInputService:IsKeyDown(Enum.KeyCode.E) or UserInputService:IsKeyDown(Enum.KeyCode.Space) then up = 1 end
-		if UserInputService:IsKeyDown(Enum.KeyCode.Q) or UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then down = 1 end
+		-- Prefer event-tracked keys (more reliable); fall back to IsKeyDown
+		local W = isDown(Enum.KeyCode.W) or UserInputService:IsKeyDown(Enum.KeyCode.W)
+		local S = isDown(Enum.KeyCode.S) or UserInputService:IsKeyDown(Enum.KeyCode.S)
+		local A = isDown(Enum.KeyCode.A) or UserInputService:IsKeyDown(Enum.KeyCode.A)
+		local D = isDown(Enum.KeyCode.D) or UserInputService:IsKeyDown(Enum.KeyCode.D)
+		local E = isDown(Enum.KeyCode.E) or UserInputService:IsKeyDown(Enum.KeyCode.E)
+		local Space = isDown(Enum.KeyCode.Space) or UserInputService:IsKeyDown(Enum.KeyCode.Space)
+		local Q = isDown(Enum.KeyCode.Q) or UserInputService:IsKeyDown(Enum.KeyCode.Q)
+		local Ctrl = isDown(Enum.KeyCode.LeftControl) or UserInputService:IsKeyDown(Enum.KeyCode.LeftControl)
+
+		if W then forward = 1 end
+		if S then backward = 1 end
+		if A then left = 1 end
+		if D then right = 1 end
+		if E or Space then up = 1 end
+		if Q or Ctrl then down = 1 end
 	end
 
 	moveInput = Vector3.new(right - left, 0, backward - forward)
