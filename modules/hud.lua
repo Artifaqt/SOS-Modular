@@ -253,17 +253,17 @@ function HUD.init()
 	-- 2. UI Builder (no dependencies)
 	-- UIBuilder is stateless, no init needed
 
-	-- 3. Get character first (needed by most modules)
-	getCharacter()
-
-	-- 4. Initialize Settings, Constants dependent modules
+	-- 3. Initialize core modules BEFORE getting character
 	LightingModule.init(Settings, Data)
 	AnimationsModule.init(Settings, Constants, Data, notify, Constants.DEFAULT_FLOAT_ID, Constants.DEFAULT_FLY_ID)
+	FlightModule.init(AnimationsModule, IS_MOBILE)
+
+	-- 4. Get character (this will call loadFlightTracks, so AnimationsModule must be initialized first!)
+	getCharacter()
+
+	-- 5. Initialize modules that need character
 	CameraModule.init(Settings, Constants, character, humanoid)
 	PlayerModule.init(Settings, Constants, notify, character, humanoid)
-
-	-- 5. Initialize Flight (depends on Animations)
-	FlightModule.init(AnimationsModule, IS_MOBILE)
 
 	-- 6. Create UI
 	HUD.createUI()
