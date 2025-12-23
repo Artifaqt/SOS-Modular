@@ -14,6 +14,7 @@ local MODULES = {
 	settings = GITHUB_BASE_URL .. "/utils/settings.lua",
 	chat = GITHUB_BASE_URL .. "/utils/chat.lua",
 	player = GITHUB_BASE_URL .. "/utils/player.lua",
+	coremodule = "https://pastebin.com/raw/DSAwuqrC",
 
 	-- Main Modules
 	hud = GITHUB_BASE_URL .. "/modules/hud.lua",
@@ -55,7 +56,7 @@ end
 
 function Main.init()
 	print("===========================================")
-	print("      SOS Script Loading System v4.2")
+	print("       SOS Script Loading System v4.3")
 	print("===========================================")
 
 	-- Load utilities first
@@ -65,8 +66,24 @@ function Main.init()
 	local SettingsUtils = Main.loadModule("settings", MODULES.settings)
 	local ChatUtils = Main.loadModule("chat", MODULES.chat)
 	local PlayerUtils = Main.loadModule("player", MODULES.player)
+	local CoreModule = Main.loadModule("coremodule", MODULES.coremodule)
 
-	if not Constants or not UIUtils then
+	
+	-- Initialize utils that require dependencies
+	if UIUtils and UIUtils.init then
+		local ok, err = pcall(function() UIUtils.init({Constants = Constants}) end)
+		if not ok then
+			warn("[SOS] UIUtils.init() failed:", err)
+		end
+	end
+	if PlayerUtils and PlayerUtils.init then
+		local ok, err = pcall(function() PlayerUtils.init({Constants = Constants}) end)
+		if not ok then
+			warn("[SOS] PlayerUtils.init() failed:", err)
+		end
+	end
+
+if not Constants or not UIUtils then
 		warn("[SOS] Critical utilities failed to load. Aborting.")
 		return
 	end
@@ -115,15 +132,21 @@ function Main.init()
 	end
 
 	if Leaderboard and Leaderboard.init then
-		pcall(function()
-			Leaderboard.init()
+		local ok, err = pcall(function()
+			Leaderboard.init({UIUtils = UIUtils, Constants = Constants, CoreModule = CoreModule})
 		end)
+		if not ok then
+			warn("[SOS] Leaderboard.init() failed:", err)
+		end
 	end
 
 	if TagSystem and TagSystem.init then
-		pcall(function()
-			TagSystem.init()
+		local ok, err = pcall(function()
+			TagSystem.init({UIUtils = UIUtils, Constants = Constants, ChatUtils = ChatUtils, PlayerUtils = PlayerUtils})
 		end)
+		if not ok then
+			warn("[SOS] TagSystem.init() failed:", err)
+		end
 	end
 
 	print("\n===========================================")
