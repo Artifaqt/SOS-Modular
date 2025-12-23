@@ -3,7 +3,16 @@
 
 local PlayerUtils = {}
 
-local Constants = loadstring(game:HttpGet("https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/utils/constants.lua"))()
+local Constants
+
+function PlayerUtils.init(deps)
+	deps = deps or {}
+	Constants = deps.Constants or Constants
+	if not Constants then
+		warn("[SOS PlayerUtils] Missing Constants. Call PlayerUtils.init({Constants=...}) before use.")
+		return
+	end
+end
 
 --------------------------------------------------------------------
 -- OWNER/ROLE CHECKS

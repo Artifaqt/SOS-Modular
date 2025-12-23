@@ -3,8 +3,18 @@
 
 local UIUtils = {}
 
-local Constants = loadstring(game:HttpGet("https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/utils/constants.lua"))()
-local THEME = Constants.THEME
+local Constants
+local THEME
+
+function UIUtils.init(deps)
+	deps = deps or {}
+	Constants = deps.Constants or Constants
+	if not Constants then
+		warn("[SOS UI] Missing Constants. Call UIUtils.init({Constants=...}) before use.")
+		return
+	end
+	THEME = Constants.THEME
+end
 
 --------------------------------------------------------------------
 -- UI COMPONENT BUILDERS

@@ -6,12 +6,11 @@ local TagSystem = {}
 -- init guard (prevents double-loading when main.lua also calls TagSystem.init())
 TagSystem.__initialized = false
 
--- Load utilities
-local UIUtils = loadstring(game:HttpGet("https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/utils/ui.lua"))()
-local Constants = loadstring(game:HttpGet("https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/utils/constants.lua"))()
-local ChatUtils = loadstring(game:HttpGet("https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/utils/chat.lua"))()
-local PlayerUtils = loadstring(game:HttpGet("https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/utils/player.lua"))()
-
+-- Utilities (injected by main.lua)
+local UIUtils
+local Constants
+local ChatUtils
+local PlayerUtils
 local Players = game:GetService("Players")
 local TextChatService = game:FindService("TextChatService")
 local RunService = game:GetService("RunService")
@@ -369,9 +368,19 @@ end
 -- INITIALIZATION
 --------------------------------------------------------------------
 
-function TagSystem.init()
+function TagSystem.init(deps)
 	if TagSystem.__initialized then return end
 	TagSystem.__initialized = true
+
+	deps = deps or {}
+	UIUtils = deps.UIUtils or UIUtils
+	Constants = deps.Constants or Constants
+	ChatUtils = deps.ChatUtils or ChatUtils
+	PlayerUtils = deps.PlayerUtils or PlayerUtils
+	if not UIUtils or not Constants or not ChatUtils or not PlayerUtils then
+		warn("[SOS Tags] Missing dependencies. Expected {UIUtils=..., Constants=..., ChatUtils=..., PlayerUtils=...}.")
+		return
+	end
 
 	ensureBroadcastPanel()
 

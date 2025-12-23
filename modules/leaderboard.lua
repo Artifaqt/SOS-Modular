@@ -3,10 +3,10 @@
 
 local Leaderboard = {}
 
--- Load utilities
-local UIUtils = loadstring(game:HttpGet("https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/utils/ui.lua"))()
-local Constants = loadstring(game:HttpGet("https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/utils/constants.lua"))()
-
+-- Utilities (injected by main.lua)
+local UIUtils
+local Constants
+local CoreModule
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local SoundService = game:GetService("SoundService")
@@ -45,12 +45,16 @@ teleportSound.Parent = SoundService
 -- INITIALIZATION
 --------------------------------------------------------------------
 
-function Leaderboard.init()
-	-- Load CoreModule for friend requests
-	pcall(function()
-		CoreModule = loadstring(game:HttpGet("https://pastebin.com/raw/DSAwuqrC"))()
-	end)
-
+function Leaderboard.init(deps)
+	deps = deps or {}
+	UIUtils = deps.UIUtils or UIUtils
+	Constants = deps.Constants or Constants
+	CoreModule = deps.CoreModule or CoreModule
+	if not UIUtils or not Constants then
+		warn("[SOS Leaderboard] Missing dependencies. Expected {UIUtils=..., Constants=...}.")
+		return
+	end
+	-- CoreModule injected by main.lua (optional)
 	-- Clean up any previous instances
 	pcall(function()
 		if CoreGui:FindFirstChild("CustomLeaderboard") then
