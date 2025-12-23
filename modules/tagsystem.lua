@@ -369,18 +369,23 @@ end
 --------------------------------------------------------------------
 
 function TagSystem.init(deps)
+	-- Ignore accidental auto-calls (we require dependency injection from main.lua)
+	if deps == nil then return end
 	if TagSystem.__initialized then return end
-	TagSystem.__initialized = true
 
 	deps = deps or {}
 	UIUtils = deps.UIUtils or UIUtils
 	Constants = deps.Constants or Constants
 	ChatUtils = deps.ChatUtils or ChatUtils
 	PlayerUtils = deps.PlayerUtils or PlayerUtils
+
 	if not UIUtils or not Constants or not ChatUtils or not PlayerUtils then
 		warn("[SOS Tags] Missing dependencies. Expected {UIUtils=..., Constants=..., ChatUtils=..., PlayerUtils=...}.")
 		return
 	end
+
+	TagSystem.__initialized = true
+
 
 	ensureBroadcastPanel()
 

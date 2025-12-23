@@ -2,6 +2,8 @@
 -- Custom Leaderboard System - COMPLETE VERSION
 
 local Leaderboard = {}
+Leaderboard.__initialized = false
+
 
 -- Utilities (injected by main.lua)
 local UIUtils
@@ -42,15 +44,22 @@ local teleportSound
 --------------------------------------------------------------------
 
 function Leaderboard.init(deps)
+	-- Ignore accidental auto-calls (we require dependency injection from main.lua)
+	if deps == nil then return end
+	if Leaderboard.__initialized then return end
+
 	deps = deps or {}
 	UIUtils = deps.UIUtils or UIUtils
 	Constants = deps.Constants or Constants
 	CoreModule = deps.CoreModule or CoreModule
+
 	if not UIUtils or not Constants then
 		warn("[SOS Leaderboard] Missing dependencies. Expected {UIUtils=..., Constants=...}.")
 		return
 	end
-	THEME = Constants.THEME
+
+	Leaderboard.__initialized = true
+THEME = Constants.THEME
 
 	-- Create / refresh teleport sound now that Constants is available
 	pcall(function()
