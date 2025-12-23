@@ -1443,7 +1443,8 @@ RunService.RenderStepped:Connect(function(dt)
 	local moveMagnitude,hasHorizontal=moveDir.Magnitude,Vector3.new(moveInput.X,0,moveInput.Z).Magnitude>0.01
 
 	if moveMagnitude>0 then
-		local unit,targetVel,alphaVel=moveDir.Unit,unit*flySpeed,clamp01(dt*velocityLerpRate)
+		local unit=moveDir.Unit
+		local targetVel,alphaVel=unit*flySpeed,clamp01(dt*velocityLerpRate)
 		currentVelocity=currentVelocity:Lerp(targetVel,alphaVel)
 	else currentVelocity=currentVelocity:Lerp(Vector3.new(),clamp01(dt*idleSlowdownRate)) end
 	bodyVel.Velocity=currentVelocity
