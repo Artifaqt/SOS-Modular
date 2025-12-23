@@ -3,6 +3,9 @@
 
 local TagSystem = {}
 
+-- init guard (prevents double-loading when main.lua also calls TagSystem.init())
+TagSystem.__initialized = false
+
 -- Load utilities
 local UIUtils = loadstring(game:HttpGet("https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/utils/ui.lua"))()
 local Constants = loadstring(game:HttpGet("https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/utils/constants.lua"))()
@@ -367,6 +370,9 @@ end
 --------------------------------------------------------------------
 
 function TagSystem.init()
+	if TagSystem.__initialized then return end
+	TagSystem.__initialized = true
+
 	ensureBroadcastPanel()
 
 	if broadcastSOS then
