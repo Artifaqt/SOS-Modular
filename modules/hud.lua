@@ -10,6 +10,9 @@ local HUD = {}
 local Data, UIBuilder, LightingModule, AnimationsModule, FlightModule, CameraModule, PlayerModule, UIPagesModule
 local Constants, Settings
 
+
+-- Internal init gate to prevent RenderStepped firing before modules are injected
+local __HUD_INITIALIZED = false
 --------------------------------------------------------------------
 -- SERVICES
 --------------------------------------------------------------------
@@ -531,6 +534,7 @@ UserInputService.InputBegan:Connect(function(input, gp)
 end)
 
 RunService.RenderStepped:Connect(function(dt)
+	if not __HUD_INITIALIZED then return end
 	-- FPS Counter
 	fpsAcc = fpsAcc + dt
 	fpsFrames = fpsFrames + 1
