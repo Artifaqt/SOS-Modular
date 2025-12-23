@@ -151,16 +151,16 @@ end
 function FlightModule.updateMovementInput()
 	local forward, backward, left, right, up, down = 0, 0, 0, 0, 0, 0
 
-	if UserInputService.KeyboardEnabled then
-		-- Prefer event-tracked keys (more reliable); fall back to IsKeyDown
-		local W = isDown(Enum.KeyCode.W) or UserInputService:IsKeyDown(Enum.KeyCode.W)
-		local S = isDown(Enum.KeyCode.S) or UserInputService:IsKeyDown(Enum.KeyCode.S)
-		local A = isDown(Enum.KeyCode.A) or UserInputService:IsKeyDown(Enum.KeyCode.A)
-		local D = isDown(Enum.KeyCode.D) or UserInputService:IsKeyDown(Enum.KeyCode.D)
-		local E = isDown(Enum.KeyCode.E) or UserInputService:IsKeyDown(Enum.KeyCode.E)
-		local Space = isDown(Enum.KeyCode.Space) or UserInputService:IsKeyDown(Enum.KeyCode.Space)
-		local Q = isDown(Enum.KeyCode.Q) or UserInputService:IsKeyDown(Enum.KeyCode.Q)
-		local Ctrl = isDown(Enum.KeyCode.LeftControl) or UserInputService:IsKeyDown(Enum.KeyCode.LeftControl)
+	-- WASD only when not mobile. Use event-tracked keys first, then fall back to IsKeyDown.
+	if not IS_MOBILE then
+		local W = (isDown and isDown(Enum.KeyCode.W)) or UserInputService:IsKeyDown(Enum.KeyCode.W)
+		local S = (isDown and isDown(Enum.KeyCode.S)) or UserInputService:IsKeyDown(Enum.KeyCode.S)
+		local A = (isDown and isDown(Enum.KeyCode.A)) or UserInputService:IsKeyDown(Enum.KeyCode.A)
+		local D = (isDown and isDown(Enum.KeyCode.D)) or UserInputService:IsKeyDown(Enum.KeyCode.D)
+		local E = (isDown and isDown(Enum.KeyCode.E)) or UserInputService:IsKeyDown(Enum.KeyCode.E)
+		local Space = (isDown and isDown(Enum.KeyCode.Space)) or UserInputService:IsKeyDown(Enum.KeyCode.Space)
+		local Q = (isDown and isDown(Enum.KeyCode.Q)) or UserInputService:IsKeyDown(Enum.KeyCode.Q)
+		local Ctrl = (isDown and isDown(Enum.KeyCode.LeftControl)) or UserInputService:IsKeyDown(Enum.KeyCode.LeftControl)
 
 		if W then forward = 1 end
 		if S then backward = 1 end
@@ -174,11 +174,6 @@ function FlightModule.updateMovementInput()
 	verticalInput = up - down
 end
 
-local function clamp01(x)
-	if x < 0 then return 0 end
-	if x > 1 then return 1 end
-	return x
-end
 
 function FlightModule.renderStep(dt, flySpeed)
 	if not flying or not rootPart or not camera or not bodyGyro or not bodyVel then return end

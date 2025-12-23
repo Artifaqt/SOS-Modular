@@ -45,7 +45,7 @@ local MOBILE_FLY_POS, MOBILE_FLY_SIZE
 local MICUP_PLACE_IDS, DISCORD_LINK
 local INTRO_SOUND_ID
 local BUTTON_CLICK_SOUND_ID, BUTTON_CLICK_VOLUME
-local IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local IS_MOBILE
 
 --------------------------------------------------------------------
 -- STATE VARIABLES
@@ -229,6 +229,9 @@ Settings = modules.Settings or Settings
 	INTRO_SOUND_ID = Constants.INTRO_SOUND_ID
 	BUTTON_CLICK_SOUND_ID = Constants.BUTTON_CLICK_SOUND_ID
 	BUTTON_CLICK_VOLUME = Constants.BUTTON_CLICK_VOLUME
+
+	-- Compute IS_MOBILE at init-time (module may be loaded before input flags settle)
+	IS_MOBILE = UserInputService.TouchEnabled and not (UserInputService.KeyboardEnabled or UserInputService.MouseEnabled)
 if not (Data and UIBuilder and LightingModule and AnimationsModule and FlightModule and CameraModule and PlayerModule and UIPagesModule and Constants and Settings) then
 	warn("[SOS HUD] Missing injected modules. Ensure main.lua loads and passes HUD sub-modules into HUD.init().")
 end
