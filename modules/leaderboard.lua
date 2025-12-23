@@ -957,4 +957,16 @@ function Leaderboard.addResizeHandle()
 	end)
 end
 
+
+--------------------------------------------------------------------
+-- CLEANUP (for re-execution)
+--------------------------------------------------------------------
+function Leaderboard.cleanup()
+    pcall(function()
+        local cg = game:GetService("CoreGui")
+        local gui = cg:FindFirstChild("CustomLeaderboard")
+        if gui then gui:Destroy() end
+    end)
+end
+
 return Leaderboard

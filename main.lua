@@ -3,6 +3,46 @@
 
 local Main = {}
 
+
+
+-- ============================================================
+-- Re-execution support (cleanup previous run)
+-- ============================================================
+local function __sos_cleanup_previous()
+    local rt = rawget(_G, "__SOS_RUNTIME")
+    if not rt then return end
+
+    -- Call module cleanup hooks
+    if type(rt.modules) == "table" then
+        for _, mod in pairs(rt.modules) do
+            if type(mod) == "table" and type(mod.cleanup) == "function" then
+                pcall(function() mod.cleanup() end)
+            end
+        end
+    end
+
+    -- Disconnect tracked connections
+    if type(rt.connections) == "table" then
+        for _, c in ipairs(rt.connections) do
+            pcall(function() c:Disconnect() end)
+        end
+    end
+
+    -- Destroy tracked instances
+    if type(rt.instances) == "table" then
+        for _, inst in ipairs(rt.instances) do
+            pcall(function() inst:Destroy() end)
+        end
+    end
+
+    _G.__SOS_RUNTIME = nil
+end
+
+__sos_cleanup_previous()
+
+local RUNTIME = { modules = {}, connections = {}, instances = {} }
+_G.__SOS_RUNTIME = RUNTIME
+
 -- GitHub base URL (UPDATE THIS WITH YOUR GITHUB RAW URL)
 local GITHUB_BASE_URL = "https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main"
 
@@ -56,16 +96,19 @@ end
 
 function Main.init()
 	print("===========================================")
-	print("       SOS Script Loading System v5.1")
+	print("   SOS Script Loading System v5.4")
 	print("===========================================")
 
 	-- Load utilities first
 	print("\n[SOS] Loading utilities...")
 	local Constants = Main.loadModule("constants", MODULES.constants)
 	local UIUtils = Main.loadModule("ui", MODULES.ui)
+RUNTIME.modules["ui"] = UIUtils
 	local SettingsUtils = Main.loadModule("settings", MODULES.settings)
 	local ChatUtils = Main.loadModule("chat", MODULES.chat)
+RUNTIME.modules["chat"] = ChatUtils
 	local PlayerUtils = Main.loadModule("player", MODULES.player)
+RUNTIME.modules["player"] = PlayerUtils
 	local CoreModule = Main.loadModule("coremodule", MODULES.coremodule)
 
 	
@@ -102,8 +145,11 @@ if not Constants or not UIUtils then
 	-- Load main modules
 	print("\n[SOS] Loading main modules...")
 	local HUD = Main.loadModule("hud", MODULES.hud)
+RUNTIME.modules["hud"] = HUD
 	local Leaderboard = Main.loadModule("leaderboard", MODULES.leaderboard)
+RUNTIME.modules["leaderboard"] = Leaderboard
 	local TagSystem = Main.loadModule("tagsystem", MODULES.tagsystem)
+RUNTIME.modules["tagsystem"] = TagSystem
 
 	-- Initialize modules
 	print("\n[SOS] Initializing modules...")

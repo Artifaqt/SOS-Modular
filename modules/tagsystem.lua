@@ -426,4 +426,16 @@ function TagSystem.init(deps)
 	print("SOS Tags loaded. Activation 𖺗. Reply ¬ once per person per join.")
 end
 
+
+--------------------------------------------------------------------
+-- CLEANUP (for re-execution)
+--------------------------------------------------------------------
+function TagSystem.cleanup()
+    pcall(function()
+        local cg = game:GetService("CoreGui")
+        local gui = cg:FindFirstChild("SOS_Tags_UI")
+        if gui then gui:Destroy() end
+    end)
+end
+
 return TagSystem

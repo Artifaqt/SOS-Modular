@@ -603,4 +603,25 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 end)
 
+
+--------------------------------------------------------------------
+-- CLEANUP (for re-execution)
+--------------------------------------------------------------------
+function HUD.cleanup()
+    -- Disconnect any tracked connections
+    if HUD.__connections then
+        for _, c in ipairs(HUD.__connections) do
+            pcall(function() c:Disconnect() end)
+        end
+    end
+    HUD.__connections = {}
+
+    -- Destroy HUD GUI
+    pcall(function()
+        local cg = game:GetService("CoreGui")
+        local gui = cg:FindFirstChild("SOS_HUD")
+        if gui then gui:Destroy() end
+    end)
+end
+
 return HUD
