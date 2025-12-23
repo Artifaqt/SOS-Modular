@@ -33,10 +33,16 @@ function AnimationsModule.init(settingsModule, constantsModule, dataModule, noti
 	Constants = constantsModule
 	Data = dataModule
 	notify = notifyFunc
-	FLOAT_ID = floatId or Constants.DEFAULT_FLOAT_ID
-	FLY_ID = flyId or Constants.DEFAULT_FLY_ID
-	DEFAULT_FLOAT_ID = Constants.DEFAULT_FLOAT_ID
-	DEFAULT_FLY_ID = Constants.DEFAULT_FLY_ID
+
+	print("[AnimationsModule] Init called with floatId:", floatId, "flyId:", flyId)
+
+	FLOAT_ID = floatId or (Constants and Constants.DEFAULT_FLOAT_ID)
+	FLY_ID = flyId or (Constants and Constants.DEFAULT_FLY_ID)
+	DEFAULT_FLOAT_ID = Constants and Constants.DEFAULT_FLOAT_ID
+	DEFAULT_FLY_ID = Constants and Constants.DEFAULT_FLY_ID
+
+	print("[AnimationsModule] FLOAT_ID set to:", FLOAT_ID)
+	print("[AnimationsModule] FLY_ID set to:", FLY_ID)
 end
 
 function AnimationsModule.updateCharacter(char, hum)

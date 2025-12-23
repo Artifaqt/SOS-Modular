@@ -43,9 +43,17 @@ end
 print("[SOS HUD] All sub-modules loaded successfully!")
 
 -- Load utilities
-local UIUtils = loadstring(game:HttpGet("https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/utils/ui.lua"))()
-local Constants = loadstring(game:HttpGet("https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/utils/constants.lua"))()
-local Settings = loadstring(game:HttpGet("https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/utils/settings.lua"))()
+print("[SOS HUD] Loading utilities...")
+local UIUtils = safeLoadModule("ui_utils", "https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/utils/ui.lua")
+local Constants = safeLoadModule("constants", "https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/utils/constants.lua")
+local Settings = safeLoadModule("settings", "https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/utils/settings.lua")
+
+if not Constants then
+	error("[SOS HUD] Constants module failed to load! Cannot continue.")
+end
+
+print("[SOS HUD] DEFAULT_FLOAT_ID:", Constants.DEFAULT_FLOAT_ID)
+print("[SOS HUD] DEFAULT_FLY_ID:", Constants.DEFAULT_FLY_ID)
 
 --------------------------------------------------------------------
 -- SERVICES
