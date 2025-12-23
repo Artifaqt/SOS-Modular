@@ -56,7 +56,7 @@ end
 
 function Main.init()
 	print("===========================================")
-	print("       SOS Script Loading System v4.8")
+	print("       SOS Script Loading System v4.9")
 	print("===========================================")
 
 	-- Load utilities first
