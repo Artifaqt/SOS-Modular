@@ -79,6 +79,7 @@ function FlightModule.updateCharacter(char, hum, root, cam, shoulder, shoulderC0
 	humanoid = hum
 	rootPart = root
 	camera = cam
+	if not camera then camera = workspace.CurrentCamera end
 	rightShoulder = shoulder
 	defaultShoulderC0 = shoulderC0
 	originalRunSoundStates = {}
@@ -176,7 +177,11 @@ end
 
 
 function FlightModule.renderStep(dt, flySpeed)
-	if not flying or not rootPart or not camera or not bodyGyro or not bodyVel then return end
+	if not flying or not rootPart or not bodyGyro or not bodyVel then return end
+
+	-- CurrentCamera can be nil early during load or can change; refresh defensively
+	camera = camera or workspace.CurrentCamera
+	if not camera then return end
 
 	FlightModule.updateMovementInput()
 
