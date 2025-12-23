@@ -15,6 +15,9 @@ local Constants, Settings
 --------------------------------------------------------------------
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local __HUD_INITIALIZED = false
+local __renderLoopConnected = false
+
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local TeleportService = game:GetService("TeleportService")
@@ -227,7 +230,9 @@ function HUD.init(modules)
 		INTRO_SOUND_ID = Constants.INTRO_SOUND_ID
 		BUTTON_CLICK_SOUND_ID = Constants.BUTTON_CLICK_SOUND_ID
 		BUTTON_CLICK_VOLUME = Constants.BUTTON_CLICK_VOLUME
-	end
+	
+	__HUD_INITIALIZED = true
+end
 
 	-- Hard fail with a clear message if critical deps are missing
 	if not (Data and UIBuilder and LightingModule and AnimationsModule and FlightModule and CameraModule and PlayerModule and UIPagesModule and Constants and Settings) then
@@ -559,6 +564,7 @@ UserInputService.InputBegan:Connect(function(input, gp)
 end)
 
 RunService.RenderStepped:Connect(function(dt)
+	if not __HUD_INITIALIZED then return end
 	-- FPS Counter
 	fpsAcc = fpsAcc + dt
 	fpsFrames = fpsFrames + 1
