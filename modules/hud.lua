@@ -183,6 +183,18 @@ local function playIntroSoundOnly()
 end
 
 --------------------------------------------------------------------
+-- HELPER FUNCTIONS (Character)
+--------------------------------------------------------------------
+local function findRightShoulderMotor(char)
+	for _, part in ipairs(char:GetDescendants()) do
+		if part:IsA("Motor6D") and part.Name == "Right Shoulder" then
+			return part
+		end
+	end
+	return nil
+end
+
+--------------------------------------------------------------------
 -- CHARACTER SETUP
 --------------------------------------------------------------------
 local function getCharacter()
@@ -191,11 +203,17 @@ local function getCharacter()
 	rootPart = character:WaitForChild("HumanoidRootPart")
 	camera = workspace.CurrentCamera
 
+	local rightShoulder = findRightShoulderMotor(character)
+	local defaultShoulderC0 = rightShoulder and rightShoulder.C0 or nil
+
 	-- Update all modules with new character
 	AnimationsModule.updateCharacter(character, humanoid)
-	FlightModule.updateCharacter(character, humanoid, rootPart)
+	FlightModule.updateCharacter(character, humanoid, rootPart, camera, rightShoulder, defaultShoulderC0)
 	CameraModule.updateCharacter(character, humanoid)
 	PlayerModule.updateCharacter(character, humanoid)
+
+	-- Load flight animation tracks
+	AnimationsModule.loadFlightTracks()
 end
 
 --------------------------------------------------------------------
@@ -223,7 +241,7 @@ function HUD.init()
 	PlayerModule.init(Settings, Constants, notify, character, humanoid)
 
 	-- 5. Initialize Flight (depends on Animations)
-	FlightModule.init(AnimationsModule, IS_MOBILE, character, humanoid, rootPart)
+	FlightModule.init(AnimationsModule, IS_MOBILE)
 
 	-- 6. Create UI
 	HUD.createUI()

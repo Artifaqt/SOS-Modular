@@ -183,9 +183,13 @@ function FlightModule.renderStep(dt, flySpeed)
 	return moveMagnitude
 end
 
--- Getters
+-- Getters/Setters
 function FlightModule.isFlying() return flying end
 function FlightModule.getBodyGyro() return bodyGyro end
 function FlightModule.getBodyVel() return bodyVel end
+function FlightModule.setFlySpeed(speed)
+	-- This is just for state synchronization
+	-- The actual flySpeed is passed to renderStep
+end
 
 return FlightModule

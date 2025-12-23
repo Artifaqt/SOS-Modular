@@ -172,6 +172,12 @@ function AnimationsModule.applyStateOverrideToAnimate(stateName, assetIdStr)
 	end
 
 	animate.Disabled = false
+
+	-- Save the override for respawn
+	if VALID_ANIM_STATES[stateName] then
+		stateOverrides[stateName] = assetIdStr
+	end
+
 	return true
 end
 
@@ -185,12 +191,14 @@ function AnimationsModule.reapplyAllOverridesAfterRespawn()
 end
 
 -- Getters/Setters
-function AnimationsModule.getFLOAT_ID() return FLOAT_ID end
-function AnimationsModule.setFLOAT_ID(id) FLOAT_ID = id end
-function AnimationsModule.getFLY_ID() return FLY_ID end
-function AnimationsModule.setFLY_ID(id) FLY_ID = id end
-function AnimationsModule.getDEFAULT_FLOAT_ID() return DEFAULT_FLOAT_ID end
-function AnimationsModule.getDEFAULT_FLY_ID() return DEFAULT_FLY_ID end
+function AnimationsModule.getFloatId() return FLOAT_ID end
+function AnimationsModule.setFloatId(id) FLOAT_ID = id end
+function AnimationsModule.resetFloatId() FLOAT_ID = DEFAULT_FLOAT_ID end
+function AnimationsModule.getFlyId() return FLY_ID end
+function AnimationsModule.setFlyId(id) FLY_ID = id end
+function AnimationsModule.resetFlyId() FLY_ID = DEFAULT_FLY_ID end
+function AnimationsModule.getDefaultFloatId() return DEFAULT_FLOAT_ID end
+function AnimationsModule.getDefaultFlyId() return DEFAULT_FLY_ID end
 function AnimationsModule.getStateOverrides() return stateOverrides end
 function AnimationsModule.getLastChosenState() return lastChosenState end
 function AnimationsModule.setLastChosenState(state) lastChosenState = state end
