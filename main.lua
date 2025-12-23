@@ -71,9 +71,14 @@ function Main.init()
 	print("\n[SOS] Initializing modules...")
 
 	if HUD and HUD.init then
-		pcall(function()
+		local success, err = pcall(function()
 			HUD.init()
 		end)
+		if not success then
+			warn("[SOS] HUD.init() failed:", err)
+		end
+	else
+		warn("[SOS] HUD module or HUD.init() not found!")
 	end
 
 	if Leaderboard and Leaderboard.init then

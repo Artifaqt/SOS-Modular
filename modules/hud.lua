@@ -9,15 +9,37 @@ local HUD = {}
 --------------------------------------------------------------------
 local BASE_URL = "https://raw.githubusercontent.com/Artifaqt/SOS-Modular/refs/heads/main/modules/hud/"
 
+local function safeLoadModule(name, url)
+	print("[SOS HUD] Loading module:", name)
+	local success, result = pcall(function()
+		local code = game:HttpGet(url)
+		return loadstring(code)()
+	end)
+
+	if success then
+		print("[SOS HUD] ✓ Loaded:", name)
+		return result
+	else
+		warn("[SOS HUD] ✗ Failed to load:", name, "-", result)
+		return nil
+	end
+end
+
 print("[SOS HUD] Loading sub-modules...")
-local Data = loadstring(game:HttpGet(BASE_URL .. "data.lua"))()
-local UIBuilder = loadstring(game:HttpGet(BASE_URL .. "ui_builder.lua"))()
-local LightingModule = loadstring(game:HttpGet(BASE_URL .. "lighting.lua"))()
-local AnimationsModule = loadstring(game:HttpGet(BASE_URL .. "animations.lua"))()
-local FlightModule = loadstring(game:HttpGet(BASE_URL .. "flight.lua"))()
-local CameraModule = loadstring(game:HttpGet(BASE_URL .. "camera.lua"))()
-local PlayerModule = loadstring(game:HttpGet(BASE_URL .. "player.lua"))()
-local UIPagesModule = loadstring(game:HttpGet(BASE_URL .. "ui_pages.lua"))()
+local Data = safeLoadModule("data", BASE_URL .. "data.lua")
+local UIBuilder = safeLoadModule("ui_builder", BASE_URL .. "ui_builder.lua")
+local LightingModule = safeLoadModule("lighting", BASE_URL .. "lighting.lua")
+local AnimationsModule = safeLoadModule("animations", BASE_URL .. "animations.lua")
+local FlightModule = safeLoadModule("flight", BASE_URL .. "flight.lua")
+local CameraModule = safeLoadModule("camera", BASE_URL .. "camera.lua")
+local PlayerModule = safeLoadModule("player", BASE_URL .. "player.lua")
+local UIPagesModule = safeLoadModule("ui_pages", BASE_URL .. "ui_pages.lua")
+
+-- Check if any critical modules failed to load
+if not Data or not UIBuilder or not AnimationsModule or not FlightModule then
+	error("[SOS HUD] Critical sub-modules failed to load! Cannot continue.")
+end
+
 print("[SOS HUD] All sub-modules loaded successfully!")
 
 -- Load utilities
