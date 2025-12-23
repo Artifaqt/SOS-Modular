@@ -69,7 +69,7 @@ local IS_MOBILE
 function FlightModule.init(animModule, isMobile)
 	AnimationsModule = animModule
 	IS_MOBILE = isMobile
-	if not IS_MOBILE then
+	if UserInputService.KeyboardEnabled then
 		bindInputConnections()
 	end
 end
@@ -151,7 +151,7 @@ end
 function FlightModule.updateMovementInput()
 	local forward, backward, left, right, up, down = 0, 0, 0, 0, 0, 0
 
-	if not IS_MOBILE then
+	if UserInputService.KeyboardEnabled then
 		-- Prefer event-tracked keys (more reliable); fall back to IsKeyDown
 		local W = isDown(Enum.KeyCode.W) or UserInputService:IsKeyDown(Enum.KeyCode.W)
 		local S = isDown(Enum.KeyCode.S) or UserInputService:IsKeyDown(Enum.KeyCode.S)
