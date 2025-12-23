@@ -34,11 +34,9 @@ function FlightModule.init(animModule, isMobile)
 	IS_MOBILE = isMobile
 end
 
--- Allows HUD/main to update the mobile flag after input capabilities settle
 function FlightModule.setIsMobile(isMobile)
-	IS_MOBILE = isMobile and true or false
+	IS_MOBILE = (isMobile == true)
 end
-
 
 function FlightModule.updateCharacter(char, hum, root, cam, shoulder, shoulderC0)
 	character = char

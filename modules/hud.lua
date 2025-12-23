@@ -10,9 +10,6 @@ local HUD = {}
 local Data, UIBuilder, LightingModule, AnimationsModule, FlightModule, CameraModule, PlayerModule, UIPagesModule
 local Constants, Settings
 
-
--- Internal init gate to prevent RenderStepped firing before modules are injected
-local __HUD_INITIALIZED = false
 --------------------------------------------------------------------
 -- SERVICES
 --------------------------------------------------------------------
@@ -39,13 +36,14 @@ local menuToggleKey = Enum.KeyCode.H
 local flightToggleKey = Enum.KeyCode.F
 local flySpeed = 200
 local maxFlySpeed, minFlySpeed = 1000, 1
-
--- These are populated from Constants during HUD.init(modules)
-local MOBILE_FLY_POS, MOBILE_FLY_SIZE
-local MICUP_PLACE_IDS, DISCORD_LINK
-local INTRO_SOUND_ID
-local BUTTON_CLICK_SOUND_ID, BUTTON_CLICK_VOLUME
-local IS_MOBILE
+local MOBILE_FLY_POS = Constants.MOBILE_FLY_POS
+local MOBILE_FLY_SIZE = Constants.MOBILE_FLY_SIZE
+local MICUP_PLACE_IDS = Constants.MICUP_PLACE_IDS
+local DISCORD_LINK = Constants.DISCORD_LINK
+local INTRO_SOUND_ID = Constants.INTRO_SOUND_ID
+local BUTTON_CLICK_SOUND_ID = Constants.BUTTON_CLICK_SOUND_ID
+local BUTTON_CLICK_VOLUME = Constants.BUTTON_CLICK_VOLUME
+local IS_MOBILE = false -- computed during HUD.init()
 
 --------------------------------------------------------------------
 -- STATE VARIABLES
@@ -206,36 +204,7 @@ end
 --------------------------------------------------------------------
 -- INITIALIZATION
 --------------------------------------------------------------------
-function HUD.init(modules)
-modules = modules or {}
--- Support both old keys and current keys
-Data = modules.Data or Data
-UIBuilder = modules.UIBuilder or UIBuilder
-LightingModule = modules.LightingModule or modules.Lighting or LightingModule
-AnimationsModule = modules.AnimationsModule or modules.Animations or AnimationsModule
-FlightModule = modules.FlightModule or modules.Flight or FlightModule
-CameraModule = modules.CameraModule or modules.Camera or CameraModule
-PlayerModule = modules.PlayerModule or modules.Player or PlayerModule
-UIPagesModule = modules.UIPagesModule or modules.UIPages or UIPagesModule
-Constants = modules.Constants or Constants
-Settings = modules.Settings or Settings
-
-
-	-- Bind constant values now that Constants has been injected
-	MOBILE_FLY_POS = Constants.MOBILE_FLY_POS
-	MOBILE_FLY_SIZE = Constants.MOBILE_FLY_SIZE
-	MICUP_PLACE_IDS = Constants.MICUP_PLACE_IDS
-	DISCORD_LINK = Constants.DISCORD_LINK
-	INTRO_SOUND_ID = Constants.INTRO_SOUND_ID
-	BUTTON_CLICK_SOUND_ID = Constants.BUTTON_CLICK_SOUND_ID
-	BUTTON_CLICK_VOLUME = Constants.BUTTON_CLICK_VOLUME
-
-	-- Compute IS_MOBILE at init-time (module may be loaded before input flags settle)
-	IS_MOBILE = UserInputService.TouchEnabled and not (UserInputService.KeyboardEnabled or UserInputService.MouseEnabled)
-if not (Data and UIBuilder and LightingModule and AnimationsModule and FlightModule and CameraModule and PlayerModule and UIPagesModule and Constants and Settings) then
-	warn("[SOS HUD] Missing injected modules. Ensure main.lua loads and passes HUD sub-modules into HUD.init().")
-end
-
+function HUD.init()
 	Settings.loadSettings()
 
 	-- Initialize all modules in dependency order
@@ -250,19 +219,34 @@ end
 	-- 3. Initialize core modules BEFORE getting character
 	LightingModule.init(Settings, Data)
 	AnimationsModule.init(Settings, Constants, Data, notify, Constants.DEFAULT_FLOAT_ID, Constants.DEFAULT_FLY_ID)
+	-- Compute input mode at init-time (load order can make KeyboardEnabled/MouseEnabled incorrect at module load)
+	local function __computeIsMobile()
+		return UserInputService.TouchEnabled and not (UserInputService.KeyboardEnabled or UserInputService.MouseEnabled)
+	end
+	IS_MOBILE = __computeIsMobile()
+
 	FlightModule.init(AnimationsModule, IS_MOBILE)
 
-	-- Re-evaluate input capabilities shortly after init (executor environments may report flags late)
-	task.delay(0.75, function()
-		local mobileNow = UserInputService.TouchEnabled and not (UserInputService.KeyboardEnabled or UserInputService.MouseEnabled)
-		if mobileNow ~= IS_MOBILE then
-			IS_MOBILE = mobileNow
-			pcall(function() FlightModule.setIsMobile(IS_MOBILE) end)
-		end
+	-- If Roblox/executor reports input capabilities late, adapt after first real input type change
+	pcall(function()
+		UserInputService.LastInputTypeChanged:Connect(function(lastType)
+			local wasMobile = IS_MOBILE
+			if lastType == Enum.UserInputType.Keyboard
+				or lastType == Enum.UserInputType.MouseMovement
+				or lastType == Enum.UserInputType.MouseButton1
+				or lastType == Enum.UserInputType.MouseButton2
+				or lastType == Enum.UserInputType.MouseButton3
+			then
+				IS_MOBILE = false
+			elseif lastType == Enum.UserInputType.Touch then
+				IS_MOBILE = __computeIsMobile()
+			end
+			if IS_MOBILE ~= wasMobile and FlightModule.setIsMobile then
+				FlightModule.setIsMobile(IS_MOBILE)
+			end
+		end)
 	end)
-
-
-	-- 4. Get character (this will call loadFlightTracks, so AnimationsModule must be initialized first!)
+-- 4. Get character (this will call loadFlightTracks, so AnimationsModule must be initialized first!)
 	getCharacter()
 
 	-- 5. Initialize modules that need character
@@ -547,7 +531,6 @@ UserInputService.InputBegan:Connect(function(input, gp)
 end)
 
 RunService.RenderStepped:Connect(function(dt)
-	if not __HUD_INITIALIZED then return end
 	-- FPS Counter
 	fpsAcc = fpsAcc + dt
 	fpsFrames = fpsFrames + 1
