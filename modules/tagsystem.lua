@@ -6,6 +6,9 @@ local TagSystem = {}
 -- init guard (prevents double-loading when main.lua also calls TagSystem.init())
 TagSystem.__initialized = false
 
+-- Connection tracking for cleanup
+TagSystem.__connections = {}
+
 -- Utilities (injected by main.lua)
 local UIUtils
 local Constants
@@ -254,10 +257,12 @@ end
 
 local function hookPlayer(plr)
 	if not plr then return end
-	plr.CharacterAdded:Connect(function()
+	local conn = plr.CharacterAdded:Connect(function()
 		task.wait(0.12)
 		refreshAllTagsForPlayer(plr)
 	end)
+	table.insert(TagSystem.__connections, conn)
+
 	if plr.Character then
 		task.defer(function()
 			refreshAllTagsForPlayer(plr)
@@ -318,7 +323,7 @@ end
 
 local function hookChatListeners()
 	if TextChatService and TextChatService.MessageReceived then
-		TextChatService.MessageReceived:Connect(function(msg)
+		local conn = TextChatService.MessageReceived:Connect(function(msg)
 			if not msg then return end
 			local text = msg.Text or ""
 			local src = msg.TextSource
@@ -341,11 +346,12 @@ local function hookChatListeners()
 				return
 			end
 		end)
+		table.insert(TagSystem.__connections, conn)
 	end
 
 	local function hookChatted(plr)
 		pcall(function()
-			plr.Chatted:Connect(function(message)
+			local conn = plr.Chatted:Connect(function(message)
 				if message == Constants.SOS_ACTIVATE_MARKER then
 					onSosActivated(plr.UserId)
 					maybeReplyToActivation(plr.UserId)
@@ -355,13 +361,15 @@ local function hookChatListeners()
 					onAkSeen(plr.UserId)
 				end
 			end)
+			table.insert(TagSystem.__connections, conn)
 		end)
 	end
 
 	for _, plr in ipairs(Players:GetPlayers()) do
 		hookChatted(plr)
 	end
-	Players.PlayerAdded:Connect(hookChatted)
+	local playerAddedConn1 = Players.PlayerAdded:Connect(hookChatted)
+	table.insert(TagSystem.__connections, playerAddedConn1)
 end
 
 --------------------------------------------------------------------
@@ -407,16 +415,18 @@ function TagSystem.init(deps)
 		hookPlayer(plr)
 	end
 
-	Players.PlayerAdded:Connect(function(plr)
+	local playerAddedConn2 = Players.PlayerAdded:Connect(function(plr)
 		hookPlayer(plr)
 		RepliedToActivationUserId[plr.UserId] = nil
 	end)
+	table.insert(TagSystem.__connections, playerAddedConn2)
 
-	Players.PlayerRemoving:Connect(function(plr)
+	local playerRemovingConn = Players.PlayerRemoving:Connect(function(plr)
 		if plr then
 			RepliedToActivationUserId[plr.UserId] = nil
 		end
 	end)
+	table.insert(TagSystem.__connections, playerRemovingConn)
 
 	hookChatListeners()
 
@@ -431,11 +441,25 @@ end
 -- CLEANUP (for re-execution)
 --------------------------------------------------------------------
 function TagSystem.cleanup()
+    -- Disconnect all tracked connections
+    for _, c in ipairs(TagSystem.__connections) do
+        pcall(function() c:Disconnect() end)
+    end
+    TagSystem.__connections = {}
+
+    -- Destroy tags GUI (in PlayerGui, not CoreGui)
     pcall(function()
-        local cg = game:GetService("CoreGui")
-        local gui = cg:FindFirstChild("SOS_Tags_UI")
-        if gui then gui:Destroy() end
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+        if playerGui then
+            local gui = playerGui:FindFirstChild("SOS_Tags_UI")
+            if gui then gui:Destroy() end
+        end
     end)
+
+    -- Clear state
+    TagSystem.__initialized = false
 end
 
 return TagSystem

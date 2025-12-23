@@ -4,6 +4,9 @@
 local Leaderboard = {}
 Leaderboard.__initialized = false
 
+-- Connection tracking for cleanup
+Leaderboard.__connections = {}
+Leaderboard.__cleanupRequested = false
 
 -- Utilities (injected by main.lua)
 local UIUtils
@@ -171,9 +174,10 @@ function Leaderboard.createUI()
 	listLayout.Padding = UDim.new(0, 3)
 	listLayout.Parent = scrollFrame
 
-	listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+	local layoutConn = listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 		scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 5)
 	end)
+	table.insert(Leaderboard.__connections, layoutConn)
 
 	-- Add resize handle
 	Leaderboard.addResizeHandle()
@@ -244,7 +248,7 @@ function Leaderboard.createPlayerEntry(player)
 	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	nameLabel.Parent = playerFrame
 
-	player:GetPropertyChangedSignal("DisplayName"):Connect(function()
+	local displayNameConn = player:GetPropertyChangedSignal("DisplayName"):Connect(function()
 		local newDisplayText = player.DisplayName
 		if player.DisplayName ~= player.Name then
 			newDisplayText = player.DisplayName .. " (@" .. player.Name .. ")"
@@ -252,6 +256,7 @@ function Leaderboard.createPlayerEntry(player)
 		nameLabel.Text = newDisplayText
 		Leaderboard.updateSortOrder()
 	end)
+	table.insert(Leaderboard.__connections, displayNameConn)
 
 	-- Special styling for specific user IDs
 	local isSpecialUser = (player.UserId == 118170824 or player.UserId == 7870252435)
@@ -275,9 +280,9 @@ function Leaderboard.createPlayerEntry(player)
 		nameLabel.Font = Enum.Font.GothamBold
 
 		spawn(function()
-			while nameLabel.Parent do
+			while nameLabel.Parent and not Leaderboard.__cleanupRequested do
 				for i = 0, 360, 2 do
-					if not nameLabel.Parent then break end
+					if not nameLabel.Parent or Leaderboard.__cleanupRequested then break end
 					gradient.Rotation = i
 					wait(0.03)
 				end
@@ -456,8 +461,9 @@ function Leaderboard.createPlayerEntry(player)
 
 	-- Update friend icon and button periodically
 	spawn(function()
-		while playerFrame.Parent do
+		while playerFrame.Parent and not Leaderboard.__cleanupRequested do
 			wait(5)
+			if Leaderboard.__cleanupRequested then break end
 			pcall(function()
 				if player ~= LocalPlayer and player.Parent then
 					local isFriend = LocalPlayer:IsFriendsWith(player.UserId)
@@ -547,9 +553,10 @@ function Leaderboard.createPlayerEntry(player)
 
 	-- Continuously monitor mute state
 	spawn(function()
-		while playerFrame.Parent do
+		while playerFrame.Parent and not Leaderboard.__cleanupRequested do
 			updateMuteState()
 			wait(2)
+			if Leaderboard.__cleanupRequested then break end
 		end
 	end)
 
@@ -672,6 +679,7 @@ function Leaderboard.createPlayerEntry(player)
 				updateConnection:Disconnect()
 			end
 			updateConnection = RunService.RenderStepped:Connect(updateOptionsPosition)
+			table.insert(Leaderboard.__connections, updateConnection)
 		else
 			closeThisPanel()
 		end
@@ -679,7 +687,7 @@ function Leaderboard.createPlayerEntry(player)
 
 	-- Hide panel when main frame slides off screen or when collapsed
 	local lastLeaderboardPos = mainFrame.AbsolutePosition
-	RunService.RenderStepped:Connect(function()
+	local panelVisibilityConn = RunService.RenderStepped:Connect(function()
 		local currentPos = mainFrame.AbsolutePosition
 		local screenSize = workspace.CurrentCamera.ViewportSize
 
@@ -693,6 +701,7 @@ function Leaderboard.createPlayerEntry(player)
 
 		lastLeaderboardPos = currentPos
 	end)
+	table.insert(Leaderboard.__connections, panelVisibilityConn)
 
 	return playerFrame
 end
@@ -712,15 +721,16 @@ function Leaderboard.setupPlayerHandlers()
 	Leaderboard.updateSortOrder()
 
 	-- Handle new players joining
-	Players.PlayerAdded:Connect(function(player)
+	local playerAddedConn = Players.PlayerAdded:Connect(function(player)
 		local entry = Leaderboard.createPlayerEntry(player)
 		entry.Parent = scrollFrame
 		playerEntries[player] = entry
 		Leaderboard.updateSortOrder()
 	end)
+	table.insert(Leaderboard.__connections, playerAddedConn)
 
 	-- Handle players leaving
-	Players.PlayerRemoving:Connect(function(player)
+	local playerRemovingConn = Players.PlayerRemoving:Connect(function(player)
 		local entry = scrollFrame:FindFirstChild(player.Name)
 		if entry then
 			entry:Destroy()
@@ -728,6 +738,7 @@ function Leaderboard.setupPlayerHandlers()
 		playerEntries[player] = nil
 		Leaderboard.updateSortOrder()
 	end)
+	table.insert(Leaderboard.__connections, playerRemovingConn)
 end
 
 function Leaderboard.updateSortOrder()
@@ -757,7 +768,7 @@ function Leaderboard.setupControls()
 	local dragging = false
 	local dragInput, mousePos, framePos
 
-	title.InputBegan:Connect(function(input)
+	local titleInputBeganConn = title.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			dragging = true
 			mousePos = input.Position
@@ -770,14 +781,16 @@ function Leaderboard.setupControls()
 			end)
 		end
 	end)
+	table.insert(Leaderboard.__connections, titleInputBeganConn)
 
-	title.InputChanged:Connect(function(input)
+	local titleInputChangedConn = title.InputChanged:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseMovement then
 			dragInput = input
 		end
 	end)
+	table.insert(Leaderboard.__connections, titleInputChangedConn)
 
-	UserInputService.InputChanged:Connect(function(input)
+	local dragMoveConn = UserInputService.InputChanged:Connect(function(input)
 		if input == dragInput and dragging then
 			local delta = input.Position - mousePos
 			mainFrame.Position = UDim2.new(
@@ -789,9 +802,10 @@ function Leaderboard.setupControls()
 			originalPosition = mainFrame.Position
 		end
 	end)
+	table.insert(Leaderboard.__connections, dragMoveConn)
 
 	-- TAB: show/hide only the currently active leaderboard
-	UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	local tabToggleConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		if gameProcessed then return end
 		if input.KeyCode ~= Enum.KeyCode.Tab then return end
 		if isSwitching then return end
@@ -810,9 +824,10 @@ function Leaderboard.setupControls()
 			end)
 		end
 	end)
+	table.insert(Leaderboard.__connections, tabToggleConn)
 
 	-- CAPS LOCK: switch which leaderboard is active (never allow both visible)
-	UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	local capsLockToggleConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		if gameProcessed then return end
 		if input.KeyCode ~= Enum.KeyCode.CapsLock then return end
 		if isSwitching then return end
@@ -861,6 +876,7 @@ function Leaderboard.setupControls()
 			end
 		end
 	end)
+	table.insert(Leaderboard.__connections, capsLockToggleConn)
 end
 
 function Leaderboard.showCustom(animated)
@@ -928,21 +944,23 @@ function Leaderboard.addResizeHandle()
 	local resizing = false
 	local resizeStart, startSize
 
-	resizeHandle.InputBegan:Connect(function(input)
+	local resizeBeganConn = resizeHandle.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			resizing = true
 			resizeStart = input.Position
 			startSize = mainFrame.Size
 		end
 	end)
+	table.insert(Leaderboard.__connections, resizeBeganConn)
 
-	UserInputService.InputEnded:Connect(function(input)
+	local resizeEndedConn = UserInputService.InputEnded:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			resizing = false
 		end
 	end)
+	table.insert(Leaderboard.__connections, resizeEndedConn)
 
-	UserInputService.InputChanged:Connect(function(input)
+	local resizeChangedConn = UserInputService.InputChanged:Connect(function(input)
 		if resizing and input.UserInputType == Enum.UserInputType.MouseMovement then
 			local delta = input.Position - resizeStart
 			local newWidth = math.max(200, startSize.X.Offset + delta.X)
@@ -955,6 +973,7 @@ function Leaderboard.addResizeHandle()
 			end
 		end
 	end)
+	table.insert(Leaderboard.__connections, resizeChangedConn)
 end
 
 
@@ -962,11 +981,35 @@ end
 -- CLEANUP (for re-execution)
 --------------------------------------------------------------------
 function Leaderboard.cleanup()
+    -- Set cleanup flag to stop spawn loops
+    Leaderboard.__cleanupRequested = true
+
+    -- Disconnect all tracked connections
+    for _, c in ipairs(Leaderboard.__connections) do
+        pcall(function() c:Disconnect() end)
+    end
+    Leaderboard.__connections = {}
+
+    -- Destroy leaderboard GUI (try both CoreGui and PlayerGui)
     pcall(function()
         local cg = game:GetService("CoreGui")
         local gui = cg:FindFirstChild("CustomLeaderboard")
         if gui then gui:Destroy() end
     end)
+
+    pcall(function()
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+        if playerGui then
+            local gui = playerGui:FindFirstChild("CustomLeaderboard")
+            if gui then gui:Destroy() end
+        end
+    end)
+
+    -- Clear state
+    Leaderboard.__initialized = false
+    Leaderboard.__cleanupRequested = false -- Reset for next run
 end
 
 return Leaderboard

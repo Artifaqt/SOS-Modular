@@ -4,6 +4,9 @@
 
 local HUD = {}
 
+-- Connection tracking for cleanup
+HUD.__connections = {}
+
 --------------------------------------------------------------------
 -- MODULE REFERENCES (injected by main.lua)
 --------------------------------------------------------------------
@@ -296,7 +299,7 @@ end
 	LightingModule.syncLightingToggles()
 
 	-- 8. Set up character respawn handling
-	LocalPlayer.CharacterAdded:Connect(function()
+	local charAddedConn = LocalPlayer.CharacterAdded:Connect(function()
 		task.wait(0.15)
 		getCharacter()
 		PlayerModule.applyPlayerSpeed()
@@ -307,6 +310,7 @@ end
 			FlightModule.stopFlying()
 		end
 	end)
+	table.insert(HUD.__connections, charAddedConn)
 
 	print("[SOS HUD] Initialization complete!")
 	notify("SOS HUD", "Loaded.", 2)
@@ -547,7 +551,7 @@ end
 --------------------------------------------------------------------
 -- INPUT & RENDER LOOPS
 --------------------------------------------------------------------
-UserInputService.InputBegan:Connect(function(input, gp)
+local inputBeganConn = UserInputService.InputBegan:Connect(function(input, gp)
 	if gp then return end
 
 	if input.KeyCode == flightToggleKey then
@@ -562,8 +566,9 @@ UserInputService.InputBegan:Connect(function(input, gp)
 		end
 	end
 end)
+table.insert(HUD.__connections, inputBeganConn)
 
-RunService.RenderStepped:Connect(function(dt)
+local renderSteppedConn = RunService.RenderStepped:Connect(function(dt)
 	if not __HUD_INITIALIZED then return end
 	-- FPS Counter
 	fpsAcc = fpsAcc + dt
@@ -602,25 +607,28 @@ RunService.RenderStepped:Connect(function(dt)
 		FlightModule.setFlySpeed(flySpeed)
 	end
 end)
+table.insert(HUD.__connections, renderSteppedConn)
 
 
 --------------------------------------------------------------------
 -- CLEANUP (for re-execution)
 --------------------------------------------------------------------
 function HUD.cleanup()
-    -- Disconnect any tracked connections
-    if HUD.__connections then
-        for _, c in ipairs(HUD.__connections) do
-            pcall(function() c:Disconnect() end)
-        end
+    -- Disconnect all tracked connections
+    for _, c in ipairs(HUD.__connections) do
+        pcall(function() c:Disconnect() end)
     end
     HUD.__connections = {}
 
-    -- Destroy HUD GUI
+    -- Destroy HUD GUI (in PlayerGui, not CoreGui)
     pcall(function()
-        local cg = game:GetService("CoreGui")
-        local gui = cg:FindFirstChild("SOS_HUD")
-        if gui then gui:Destroy() end
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+        if playerGui then
+            local gui = playerGui:FindFirstChild("SOS_HUD")
+            if gui then gui:Destroy() end
+        end
     end)
 end
 
