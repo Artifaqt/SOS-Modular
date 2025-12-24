@@ -42,6 +42,9 @@ local originalPosition
 -- Teleport sound (created after Constants is injected)
 local teleportSound
 
+-- Centralized panel update system (reduces RenderStepped connections from 2*playerCount to just 1)
+local activePanels = {} -- { {panel=optionsPanel, updateFunc=updateOptionsPosition, playerFrame=frame} }
+
 --------------------------------------------------------------------
 -- INITIALIZATION
 --------------------------------------------------------------------
@@ -562,7 +565,7 @@ function Leaderboard.createPlayerEntry(player)
 
 	-- Track expanded state
 	local expanded = false
-	local updateConnection = nil
+	local panelData = nil
 
 	-- Close panel function
 	local function closeThisPanel()
@@ -571,9 +574,15 @@ function Leaderboard.createPlayerEntry(player)
 
 		playerFrame.BackgroundColor3 = THEME.Entry
 
-		if updateConnection then
-			updateConnection:Disconnect()
-			updateConnection = nil
+		-- Unregister from centralized update system
+		if panelData then
+			for i = #activePanels, 1, -1 do
+				if activePanels[i] == panelData then
+					table.remove(activePanels, i)
+					break
+				end
+			end
+			panelData = nil
 		end
 
 		if currentlyExpandedPanel == optionsPanel then
@@ -675,33 +684,21 @@ function Leaderboard.createPlayerEntry(player)
 				optionsPanel:TweenPosition(UDim2.new(0, targetX, 0, clampedY), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
 			end
 
-			if updateConnection then
-				updateConnection:Disconnect()
+			-- Register with centralized update system instead of creating individual RenderStepped
+			if panelData then
+				-- Already registered, no need to re-add
+			else
+				panelData = {
+					panel = optionsPanel,
+					updateFunc = updateOptionsPosition,
+					playerFrame = playerFrame
+				}
+				table.insert(activePanels, panelData)
 			end
-			updateConnection = RunService.RenderStepped:Connect(updateOptionsPosition)
-			table.insert(Leaderboard.__connections, updateConnection)
 		else
 			closeThisPanel()
 		end
 	end)
-
-	-- Hide panel when main frame slides off screen or when collapsed
-	local lastLeaderboardPos = mainFrame.AbsolutePosition
-	local panelVisibilityConn = RunService.RenderStepped:Connect(function()
-		local currentPos = mainFrame.AbsolutePosition
-		local screenSize = workspace.CurrentCamera.ViewportSize
-
-		local isOffScreen = currentPos.X < -mainFrame.AbsoluteSize.X or currentPos.X > screenSize.X
-
-		if isOffScreen or not expanded then
-			optionsPanel.Visible = false
-		else
-			optionsPanel.Visible = true
-		end
-
-		lastLeaderboardPos = currentPos
-	end)
-	table.insert(Leaderboard.__connections, panelVisibilityConn)
 
 	return playerFrame
 end
@@ -877,6 +874,37 @@ function Leaderboard.setupControls()
 		end
 	end)
 	table.insert(Leaderboard.__connections, capsLockToggleConn)
+
+	-- Centralized RenderStepped loop for all player option panels
+	-- This replaces per-player RenderStepped connections (reduces from 2*playerCount to just 1)
+	local centralizedUpdateConn = RunService.RenderStepped:Connect(function()
+		if Leaderboard.__cleanupRequested then return end
+
+		for i = #activePanels, 1, -1 do
+			local panelData = activePanels[i]
+			if panelData and panelData.panel and panelData.panel.Parent then
+				-- Update position
+				if panelData.updateFunc then
+					pcall(panelData.updateFunc)
+				end
+
+				-- Update visibility based on leaderboard position
+				local currentPos = mainFrame.AbsolutePosition
+				local screenSize = workspace.CurrentCamera.ViewportSize
+				local isOffScreen = currentPos.X < -mainFrame.AbsoluteSize.X or currentPos.X > screenSize.X
+
+				if isOffScreen or not expanded then
+					panelData.panel.Visible = false
+				else
+					panelData.panel.Visible = true
+				end
+			else
+				-- Panel was destroyed, remove from tracking
+				table.remove(activePanels, i)
+			end
+		end
+	end)
+	table.insert(Leaderboard.__connections, centralizedUpdateConn)
 end
 
 function Leaderboard.showCustom(animated)
