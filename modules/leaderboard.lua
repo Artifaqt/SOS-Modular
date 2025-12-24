@@ -564,25 +564,26 @@ function Leaderboard.createPlayerEntry(player)
 	end)
 
 	-- Track expanded state
-	local expanded = false
-	local panelData = nil
+	local panelData = {
+		panel = optionsPanel,
+		updateFunc = nil, -- Will be set later
+		playerFrame = playerFrame,
+		expanded = false -- Track expanded state here so centralized loop can access it
+	}
 
 	-- Close panel function
 	local function closeThisPanel()
-		expanded = false
+		panelData.expanded = false
 		optionsPanel.Visible = false
 
 		playerFrame.BackgroundColor3 = THEME.Entry
 
 		-- Unregister from centralized update system
-		if panelData then
-			for i = #activePanels, 1, -1 do
-				if activePanels[i] == panelData then
-					table.remove(activePanels, i)
-					break
-				end
+		for i = #activePanels, 1, -1 do
+			if activePanels[i] == panelData then
+				table.remove(activePanels, i)
+				break
 			end
-			panelData = nil
 		end
 
 		if currentlyExpandedPanel == optionsPanel then
@@ -593,7 +594,7 @@ function Leaderboard.createPlayerEntry(player)
 
 	-- Update options panel position
 	local function updateOptionsPosition()
-		if expanded and mainFrame.Visible then
+		if panelData.expanded and mainFrame.Visible then
 			local frameAbsPos = playerFrame.AbsolutePosition
 			local leaderboardAbsPos = mainFrame.AbsolutePosition
 			local leaderboardSize = mainFrame.AbsoluteSize
@@ -627,6 +628,9 @@ function Leaderboard.createPlayerEntry(player)
 		end
 	end
 
+	-- Set the update function now that it's defined
+	panelData.updateFunc = updateOptionsPosition
+
 	-- Click to expand/collapse
 	clickButton.MouseButton1Click:Connect(function()
 		if currentlyExpandedPanel and currentlyExpandedPanel ~= optionsPanel then
@@ -635,9 +639,9 @@ function Leaderboard.createPlayerEntry(player)
 			end
 		end
 
-		expanded = not expanded
+		panelData.expanded = not panelData.expanded
 
-		if expanded then
+		if panelData.expanded then
 			local frameAbsPos = playerFrame.AbsolutePosition
 			local leaderboardAbsPos = mainFrame.AbsolutePosition
 			local leaderboardSize = mainFrame.AbsoluteSize
@@ -649,7 +653,7 @@ function Leaderboard.createPlayerEntry(player)
 			local entryBottomY = frameAbsPos.Y + playerFrame.AbsoluteSize.Y
 
 			if entryBottomY < leaderboardTopY or entryTopY > leaderboardBottomY then
-				expanded = false
+				panelData.expanded = false
 				return
 			end
 
@@ -684,17 +688,8 @@ function Leaderboard.createPlayerEntry(player)
 				optionsPanel:TweenPosition(UDim2.new(0, targetX, 0, clampedY), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
 			end
 
-			-- Register with centralized update system instead of creating individual RenderStepped
-			if panelData then
-				-- Already registered, no need to re-add
-			else
-				panelData = {
-					panel = optionsPanel,
-					updateFunc = updateOptionsPosition,
-					playerFrame = playerFrame
-				}
-				table.insert(activePanels, panelData)
-			end
+			-- Register with centralized update system
+			table.insert(activePanels, panelData)
 		else
 			closeThisPanel()
 		end
@@ -888,12 +883,12 @@ function Leaderboard.setupControls()
 					pcall(panelData.updateFunc)
 				end
 
-				-- Update visibility based on leaderboard position
+				-- Update visibility based on leaderboard position and expanded state
 				local currentPos = mainFrame.AbsolutePosition
 				local screenSize = workspace.CurrentCamera.ViewportSize
 				local isOffScreen = currentPos.X < -mainFrame.AbsoluteSize.X or currentPos.X > screenSize.X
 
-				if isOffScreen or not expanded then
+				if isOffScreen or not panelData.expanded then
 					panelData.panel.Visible = false
 				else
 					panelData.panel.Visible = true
